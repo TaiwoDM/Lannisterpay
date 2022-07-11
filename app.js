@@ -8,4 +8,4 @@ app.use(express.json());
 
 app.post("/split-payments/compute", computeSplitPayment);
 
-app.listen(8000);
+export default app;
