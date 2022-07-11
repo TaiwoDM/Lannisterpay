@@ -11,6 +11,6 @@ import app from "./app.js";
 
 const port = process.env.PORT || 8000;
 
-app.listen(port, "127.0.0.1", () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`App running on port ${port}`);
 });
