@@ -31,6 +31,7 @@ const computeSplitPayment = (req, res, next) => {
   //   deep copy the balance just before ratio computations starts
   const arr = [transaction.Balance];
   const deepCopyBalance = [...arr];
+
   //   compute ratio split types
   transaction.ratioComputation(deepCopyBalance[0]);
 
