@@ -1,9 +1,6 @@
-let SplitBreakdown;
-
 class Transaction {
   constructor(ID, Amount, Currency, CustomerEmail, SplitInfo) {
-    SplitBreakdown = [];
-
+    this.SplitBreakdown = [];
     this.ID = ID;
     this.Amount = Amount;
     this.Currency = Currency;
@@ -12,10 +9,10 @@ class Transaction {
     this.Balance = Amount;
 
     this.TotalRatio = 0; //variable for total ratios
-    this.SplitInfo.sort((a, b) =>
+    this.sortedSplit = this.SplitInfo.sort((a, b) =>
       a.SplitType == b.SplitType ? 0 : a.SplitType > b.SplitType ? 1 : -1
     ); //sorting by splittype in splitinfo array of objs
-    this.index = 0;
+    this.InitialRatioBal = Amount;
 
     // getting sum of ind. ratio stored in TotalRatio with a loop
     this.SplitInfo.forEach((split) => {
@@ -25,81 +22,77 @@ class Transaction {
     });
   }
 
-  // function to update SplitBreakdown, Balance and Index
-  updateSplitBreakDownBalanceAndIndex = (SplitEntityId, Amount) => {
-    SplitBreakdown.push({ SplitEntityId, Amount });
+  computeTransaction = () => {
+    this.sortedSplit.forEach((el) => {
+      if (this.Balance >= 0) {
+        if (el.SplitType == "FLAT") {
+          this.flatComputation(el);
+        } else if (el.SplitType == "PERCENTAGE") {
+          this.percentageComputation(el);
+        } else {
+          this.ratioComputation(el);
+        }
+      } else throw new Error("The final Balance value cannot be lesser than 0");
+    });
 
-    this.Balance = this.Balance - Amount;
-
-    this.index += 1;
+    return {
+      ID: this.ID,
+      Amount: this.Balance,
+      SplitBreakdown: this.SplitBreakdown,
+    };
   };
 
-  flatComputation = () => {
-    if (
-      this.SplitInfo[this.index] &&
-      this.SplitInfo[this.index].SplitType.toUpperCase() == "FLAT"
-    ) {
-      const SplitEntityId = this.SplitInfo[this.index].SplitEntityId;
-      const SVal = this.SplitInfo[this.index].SplitValue;
-      const Amount = SVal;
+  flatComputation = (data) => {
+    const Amount = data.SplitValue;
 
-      if (Amount >= 0 && Amount <= this.Balance) {
-        this.updateSplitBreakDownBalanceAndIndex(SplitEntityId, Amount);
+    if (Amount <= this.Balance && Amount >= 0) {
+      this.Balance -= Amount;
 
-        return this.flatComputation();
-      } else {
-        SplitBreakdown.push({ SplitEntityId, Amount });
-        this.index += 1;
-        return;
-      }
-    }
+      this.InitialRatioBal -= Amount;
+
+      this.SplitBreakdown.push({
+        SplitEntityId: data.SplitEntityId,
+        Amount,
+      });
+    } else
+      throw new Error(
+        "The split Amount value computed for each entity cannot be greater than the transaction Amountand the split Amount value computed for each entity cannot be lesser than 0"
+      );
   };
 
-  percentageComputation = () => {
-    if (
-      // are there untreated elements in the splitinfo array?
-      this.SplitInfo[this.index] &&
-      this.SplitInfo[this.index].SplitType.toUpperCase() == "PERCENTAGE"
-    ) {
-      // dec variables to ease referencing
-      const SplitEntityId = this.SplitInfo[this.index].SplitEntityId;
-      const SVal = this.SplitInfo[this.index].SplitValue;
-      const Amount = (SVal / 100) * this.Balance;
+  percentageComputation = (data) => {
+    const Amount = (data.SplitValue / 100) * this.Balance;
 
-      if (Amount >= 0 && Amount <= this.Balance) {
-        // is the amount greater than 0 and less than amount?
-        this.updateSplitBreakDownBalanceAndIndex(SplitEntityId, Amount);
+    if (Amount <= this.Balance && Amount >= 0) {
+      this.Balance -= Amount;
 
-        return this.percentageComputation();
-      } else {
-        SplitBreakdown.push({ SplitEntityId, Amount });
-        this.index += 1;
-        return;
-      }
-    }
+      this.InitialRatioBal -= Amount;
+
+      this.SplitBreakdown.push({
+        SplitEntityId: data.SplitEntityId,
+        Amount,
+      });
+    } else
+      throw new Error(
+        "The split Amount value computed for each entity cannot be greater than the transaction Amountand the split Amount value computed for each entity cannot be lesser than 0"
+      );
   };
 
-  ratioComputation(balance) {
-    if (
-      this.SplitInfo[this.index] &&
-      this.SplitInfo[this.index].SplitType.toUpperCase() == "RATIO"
-    ) {
-      const TR = this.TotalRatio;
-      const SplitEntityId = this.SplitInfo[this.index].SplitEntityId;
-      const SVal = this.SplitInfo[this.index].SplitValue;
-      const Amount = (SVal / TR) * balance;
+  ratioComputation = (data) => {
+    const Amount = (data.SplitValue / this.TotalRatio) * this.InitialRatioBal;
 
-      if (Amount >= 0 && Amount <= this.Balance) {
-        this.updateSplitBreakDownBalanceAndIndex(SplitEntityId, Amount);
+    if (Amount <= this.Balance && Amount >= 0) {
+      this.Balance -= Amount;
 
-        return this.ratioComputation(balance);
-      } else {
-        SplitBreakdown.push({ SplitEntityId, Amount });
-        index += 1;
-        return;
-      }
-    }
-  }
+      this.SplitBreakdown.push({
+        SplitEntityId: data.SplitEntityId,
+        Amount,
+      });
+    } else
+      throw new Error(
+        "The split Amount value computed for each entity cannot be greater than the transaction Amountand the split Amount value computed for each entity cannot be lesser than 0"
+      );
+  };
 }
 
-export { Transaction, SplitBreakdown };
+export default Transaction;

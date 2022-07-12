@@ -1,11 +1,11 @@
 import express from "express";
 
-import computeSplitPayment from "./controllers/computeSplitPayment.js";
+import computeSplitPaymentRouter from "./routes/index.js";
 
 const app = express();
 
 app.use(express.json());
 
-app.post("/split-payments/compute", computeSplitPayment);
+app.use(computeSplitPaymentRouter);
 
 export default app;
